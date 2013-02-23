@@ -1,9 +1,6 @@
 package main
 
 import (
-	"crypto/hmac"
-	"crypto/sha1"
-	"encoding/base64"
 	"flag"
 	"github.com/nfnt/resize"
 	"image"
@@ -16,7 +13,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"sort"
 	"strings"
 	"time"
 )
@@ -26,36 +22,7 @@ type proxyHandler struct {
 	Scheme    string // scheme of the proxy (typically http)
 	Prefix    string // path prefix for the proxy
 	Format    string // image format on the proxy
-	Secret    string // secret for calculating the HMAC
 	Watermark string // filename of the watermark
-}
-
-func (p proxyHandler) hmacForURL(u *url.URL) string {
-	// Order the keys
-	keys := make([]string, 0, len(u.Query()))
-	for k := range u.Query() {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	// Generate the Query String
-	parts := make([]string, 0, len(u.Query()))
-	for _, key := range keys {
-		if key == "s" {
-			continue
-		} else {
-			prefix := url.QueryEscape(key) + "="
-			for _, v := range u.Query()[key] {
-				parts = append(parts, prefix+url.QueryEscape(v))
-			}
-		}
-	}
-	queryString := strings.Join(parts, "&")
-
-	h := hmac.New(sha1.New, []byte(p.Secret))
-	h.Write([]byte(u.Path + "?" + queryString))
-	log.Println(base64.StdEncoding.EncodeToString(h.Sum(nil)))
-	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }
 
 func (h proxyHandler) urlFor(u *url.URL) *url.URL {
@@ -76,33 +43,25 @@ func (h *proxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	)
 	startTime := time.Now()
 
-	// Verify the URL
-	if h.hmacForURL(r.URL) != r.URL.Query().Get("s") {
-		status = http.StatusUnauthorized
-		w.WriteHeader(status)
-	}
+  resp, err1 := http.Get(h.urlFor(r.URL).String())
+  if err1 != nil {
+    status = resp.StatusCode
+    w.WriteHeader(status)
+  }
 
-	if status != http.StatusUnauthorized {
-		resp, err1 := http.Get(h.urlFor(r.URL).String())
-		if err1 != nil {
-			status = resp.StatusCode
-			w.WriteHeader(status)
-		}
-
-		defer resp.Body.Close()
-		m, _, err2 := image.Decode(resp.Body)
-		if err1 != nil && err2 != nil {
-			status = http.StatusInternalServerError
-			w.WriteHeader(status)
-		} else {
-			status = http.StatusOK
-			err3 := h.serveImage(w, r, m)
-			if err3 != nil {
-				status = http.StatusInternalServerError
-				w.WriteHeader(status)
-			}
-		}
-	}
+  defer resp.Body.Close()
+  m, _, err2 := image.Decode(resp.Body)
+  if err1 != nil && err2 != nil {
+    status = http.StatusInternalServerError
+    w.WriteHeader(status)
+  } else {
+    status = http.StatusOK
+    err3 := h.serveImage(w, r, m)
+    if err3 != nil {
+      status = http.StatusInternalServerError
+      w.WriteHeader(status)
+    }
+  }
 
 	duration = time.Since(startTime)
 	log.Printf("%v\t%v\n                    Completed %d %v in %dms", r.Method, r.URL.String(), status, http.StatusText(status), int(duration.Nanoseconds()/1000000))
