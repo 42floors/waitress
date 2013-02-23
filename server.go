@@ -172,14 +172,14 @@ func parseConfigFile(n string) (*proxyHandler, error) {
 	return h, nil
 }
 
-var configFile string
-var serverPort string
+var configFile    string
+var serverPort    string
+var serverBinding string
 
 func init() {
 	flag.StringVar(&configFile, "config", "", "conf file")
-	flag.StringVar(&configFile, "c", "", "conf file (shorthand)")
-	flag.StringVar(&serverPort, "p", "3000", "use PORT (default 3000)")
-	flag.StringVar(&serverPort, "port", "3000", "use PORT (default 3000)")
+	flag.StringVar(&serverPort, "port", "3000", "run the server on the specified port")
+	flag.StringVar(&serverBinding, "binding", "0.0.0.0", "bind the server to the specified ip")
 }
 
 func main() {
@@ -189,5 +189,5 @@ func main() {
 		log.Fatal("Unable to find / parse config file.")
 	}
 	http.Handle("/", h)
-	http.ListenAndServe(":"+serverPort, nil)
+	http.ListenAndServe(serverBinding + ":" + serverPort, nil)
 }
