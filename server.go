@@ -23,6 +23,7 @@ type proxyHandler struct {
 	Prefix    string // path prefix for the proxy
 	Format    string // image format on the proxy
 	Watermark string // filename of the watermark
+  watermarkImage image.Image
 }
 
 func (h proxyHandler) urlFor(u *url.URL) *url.URL {
@@ -44,22 +45,25 @@ func (h *proxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 
   resp, err1 := http.Get(h.urlFor(r.URL).String())
-  if err1 != nil {
+  defer resp.Body.Close()
+
+  if err1 != nil || resp.StatusCode != http.StatusOK {
     status = resp.StatusCode
     w.WriteHeader(status)
   }
 
-  defer resp.Body.Close()
-  m, _, err2 := image.Decode(resp.Body)
-  if err1 != nil && err2 != nil {
-    status = http.StatusInternalServerError
-    w.WriteHeader(status)
-  } else {
-    status = http.StatusOK
-    err3 := h.serveImage(w, r, m)
-    if err3 != nil {
+  if resp.StatusCode == http.StatusOK {
+    m, _, err2 := image.Decode(resp.Body)
+    if err1 != nil && err2 != nil {
       status = http.StatusInternalServerError
       w.WriteHeader(status)
+    } else {
+      status = http.StatusOK
+      err3 := h.serveImage(w, r, m)
+      if err3 != nil {
+        status = http.StatusInternalServerError
+        w.WriteHeader(status)
+      }
     }
   }
 
@@ -98,7 +102,7 @@ func (h *proxyHandler) serveImage(w http.ResponseWriter, r *http.Request, m imag
 
 	switch options["mimeType"].(string) {
 	case "image/jpeg":
-		err = jpeg.Encode(w, m, nil)
+		err = jpeg.Encode(w, m, &jpeg.Options{Quality: 85})
 	case "image/png":
 		err = png.Encode(w, m)
 	}
@@ -125,9 +129,17 @@ func parseConfigFile(n string) (*proxyHandler, error) {
 		return nil, err
 	}
 
-	goyaml.Unmarshal(data, &h)
+	err = goyaml.Unmarshal(data, &h)
+	if err != nil {
+		return nil, err
+	}
 
-	log.Println(h)
+	file, err = os.Open(h.Watermark)
+	h.watermarkImage, _, err = image.Decode(file)
+	if err != nil {
+		return nil, err
+	}
+
 	return h, nil
 }
 

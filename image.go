@@ -3,10 +3,10 @@ package main
 import (
 	"image"
 	"image/draw"
+	"github.com/nfnt/resize"
 	"log"
 	"mime"
 	"net/http"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -55,7 +55,7 @@ func parseSize(s string) map[string]interface{} {
 }
 
 func extractOptions(r *http.Request, m image.Image) map[string]interface{} {
-	sizeOptions := parseSize(r.URL.Query().Get("size"))
+	sizeOptions := parseSize(r.URL.Query().Get("s"))
 
 	options := map[string]interface{}{"format": "png"}
 	options["format"] = r.URL.Path[strings.LastIndex(r.URL.Path, ".")+1:]
@@ -118,17 +118,20 @@ func resizeAndCropRects(srcRect, dstRect image.Rectangle) (image.Rectangle, imag
 }
 
 func (h *proxyHandler) watermark(m image.Image) (image.Image, error) {
-	file, err := os.Open(h.Watermark)
-	if err != nil {
-		return nil, err
-	}
-	watermark, _, _ := image.Decode(file)
+  mRect := m.Bounds()
+  if mRect.Dx() * mRect.Dy() <= 10000 {
+    return m, nil
+  }
+
+  wWidth  := uint(float32(mRect.Dx()) * 0.29 )
+  scaledWatermark := resize.Resize(wWidth, 0, h.watermarkImage, resize.MitchellNetravali)
 
 	b := m.Bounds()
 	r := image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
 	draw.Draw(r, r.Bounds(), m, b.Min, draw.Src)
 
-	location := image.Rect(r.Bounds().Dx()-20-watermark.Bounds().Dx(), r.Bounds().Dy()-20-watermark.Bounds().Dy(), r.Bounds().Dx()-20, r.Bounds().Dy()-20)
-	draw.DrawMask(r, location, watermark, image.ZP, nil, image.ZP, draw.Over)
+  margin := int(float32(mRect.Dx()) * 0.04)
+	location := image.Rect(r.Bounds().Dx()-margin-scaledWatermark.Bounds().Dx(), r.Bounds().Dy()-margin-scaledWatermark.Bounds().Dy(), r.Bounds().Dx()-margin, r.Bounds().Dy()-margin)
+	draw.DrawMask(r, location, scaledWatermark, image.ZP, nil, image.ZP, draw.Over)
 	return r, nil
 }
