@@ -1,9 +1,10 @@
 package main
 
 import (
-	"image"
-	"image/draw"
 	"github.com/nfnt/resize"
+	"image"
+	"image/color"
+	"image/draw"
 	"log"
 	"mime"
 	"net/http"
@@ -23,6 +24,8 @@ func parseSize(s string) map[string]interface{} {
 
 	options := make(map[string]interface{})
 	options["crop"] = false
+	options["minimum"] = false
+	options["enforce"] = false
 
 	for key, exp := range sizeExps {
 		if exp.MatchString(s) {
@@ -34,18 +37,30 @@ func parseSize(s string) map[string]interface{} {
 				switch matches[3] {
 				case "#":
 					options["crop"] = true
+				case "^":
+					options["minimum"] = true
+				case "!":
+					options["enforce"] = true
 				}
 			case "width":
 				options["width"], _ = strconv.Atoi(matches[1])
 				switch matches[2] {
 				case "#":
 					options["crop"] = true
+				case "^":
+					options["minimum"] = true
+				case "!":
+					options["enforce"] = true
 				}
 			case "height":
 				options["height"], _ = strconv.Atoi(matches[1])
 				switch matches[2] {
 				case "#":
 					options["crop"] = true
+				case "^":
+					options["minimum"] = true
+				case "!":
+					options["enforce"] = true
 				}
 			}
 		}
@@ -63,6 +78,8 @@ func extractOptions(r *http.Request, m image.Image) map[string]interface{} {
 	options["width"] = sizeOptions["width"]
 	options["height"] = sizeOptions["height"]
 	options["crop"] = sizeOptions["crop"]
+	options["minimum"] = sizeOptions["minimum"]
+	options["enforce"] = sizeOptions["enforce"]
 
 	w := options["width"] != nil
 	h := options["height"] != nil
@@ -91,7 +108,8 @@ func crop(m image.Image, r image.Rectangle) image.Image {
 	return m
 }
 
-func resizeAndCropRects(srcRect, dstRect image.Rectangle) (image.Rectangle, image.Rectangle) {
+func resizeAndCrop(m image.Image, dstRect image.Rectangle) image.Image {
+	srcRect := m.Bounds()
 	srcRatio := float32(srcRect.Dx()) / float32(srcRect.Dy())
 	dstRatio := float32(dstRect.Dx()) / float32(dstRect.Dy())
 
@@ -109,28 +127,47 @@ func resizeAndCropRects(srcRect, dstRect image.Rectangle) (image.Rectangle, imag
 		wOffset := int(float32(resizeRect.Dx()-dstRect.Dx()) / 2)
 		cropRect = image.Rect(wOffset, 0, dstRect.Dx()+wOffset, h)
 	}
-	// log.Printf("Source: %v (Ratio: %v)", srcRect, srcRatio)
-	// log.Printf("Destination: %v (Ratio: %v)", dstRect, dstRatio)
-	// log.Printf("Resize: %v", resizeRect)
-	// log.Printf("Cropping: %v", cropRect)
 
-	return resizeRect, cropRect
+	m = resize.Resize(uint(resizeRect.Dx()), uint(resizeRect.Dy()), m, resize.MitchellNetravali)
+	m = crop(m, cropRect)
+
+	return m
+}
+
+func resizeAndPad(m image.Image, dstRect image.Rectangle, bgColor color.Color) image.Image {
+	srcRect := m.Bounds()
+	srcRatio := float32(srcRect.Dx()) / float32(srcRect.Dy())
+	dstRatio := float32(dstRect.Dx()) / float32(dstRect.Dy())
+
+	bg := image.NewRGBA(image.Rect(0, 0, dstRect.Dx(), dstRect.Dy()))
+	draw.Draw(bg, bg.Bounds(), image.NewUniform(bgColor), image.ZP, draw.Src)
+	var wOffset, hOffset int
+	if srcRatio >= dstRatio { // wider
+		m = resize.Resize(uint(dstRect.Dx()), 0, m, resize.MitchellNetravali)
+		hOffset = int(float32(bg.Bounds().Dy()-m.Bounds().Dy()) / 2)
+	} else {
+		m = resize.Resize(0, uint(dstRect.Dy()), m, resize.MitchellNetravali)
+		wOffset = int(float32(bg.Bounds().Dx()-m.Bounds().Dx()) / 2)
+	}
+	log.Println(wOffset, hOffset)
+	draw.Draw(bg, image.Rect(wOffset, hOffset, m.Bounds().Dx()+wOffset, m.Bounds().Dy()+hOffset), m, image.ZP, draw.Over)
+	return bg
 }
 
 func (h *proxyHandler) watermark(m image.Image) (image.Image, error) {
-  mRect := m.Bounds()
-  if mRect.Dx() * mRect.Dy() <= 10000 {
-    return m, nil
-  }
+	mRect := m.Bounds()
+	if mRect.Dx()*mRect.Dy() <= 10000 {
+		return m, nil
+	}
 
-  wWidth  := uint(float32(mRect.Dx()) * 0.29 )
-  scaledWatermark := resize.Resize(wWidth, 0, h.watermarkImage, resize.MitchellNetravali)
+	wWidth := uint(float32(mRect.Dx()) * 0.29)
+	scaledWatermark := resize.Resize(wWidth, 0, h.watermarkImage, resize.MitchellNetravali)
 
 	b := m.Bounds()
 	r := image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
 	draw.Draw(r, r.Bounds(), m, b.Min, draw.Src)
 
-  margin := int(float32(mRect.Dx()) * 0.04)
+	margin := int(float32(mRect.Dx()) * 0.04)
 	location := image.Rect(r.Bounds().Dx()-margin-scaledWatermark.Bounds().Dx(), r.Bounds().Dy()-margin-scaledWatermark.Bounds().Dy(), r.Bounds().Dx()-margin, r.Bounds().Dy()-margin)
 	draw.DrawMask(r, location, scaledWatermark, image.ZP, nil, image.ZP, draw.Over)
 	return r, nil
