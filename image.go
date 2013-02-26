@@ -149,7 +149,6 @@ func resizeAndPad(m image.Image, dstRect image.Rectangle, bgColor color.Color) i
 		m = resize.Resize(0, uint(dstRect.Dy()), m, resize.MitchellNetravali)
 		wOffset = int(float32(bg.Bounds().Dx()-m.Bounds().Dx()) / 2)
 	}
-	log.Println(wOffset, hOffset)
 	draw.Draw(bg, image.Rect(wOffset, hOffset, m.Bounds().Dx()+wOffset, m.Bounds().Dy()+hOffset), m, image.ZP, draw.Over)
 	return bg
 }
@@ -160,8 +159,11 @@ func (h *proxyHandler) watermark(m image.Image) (image.Image, error) {
 		return m, nil
 	}
 
-	wWidth := uint(float32(mRect.Dx()) * 0.29)
-	scaledWatermark := resize.Resize(wWidth, 0, h.watermarkImage, resize.MitchellNetravali)
+	wWidth := int(float32(mRect.Dx()) * 0.29)
+  if wWidth > h.watermarkImage.Bounds().Dx() {
+    wWidth = h.watermarkImage.Bounds().Dx()
+  }
+	scaledWatermark := resize.Resize(uint(wWidth), 0, h.watermarkImage, resize.MitchellNetravali)
 
 	b := m.Bounds()
 	r := image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
