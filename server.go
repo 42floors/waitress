@@ -41,6 +41,7 @@ func (h proxyHandler) urlFor(u *url.URL) *url.URL {
 }
 
 func (h *proxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+  // TODO: Recover from panic and throw a 500
 	var (
 		status   int
 		duration time.Duration
@@ -117,6 +118,7 @@ func (h *proxyHandler) serveImage(w http.ResponseWriter, r *http.Request, m imag
 	w.Header().Set("Content-type", options["mimeType"].(string))
 	w.Header().Set("Expires", time.Now().Add(year).UTC().Format(timeFormat))
 	w.Header().Set("Cache-Control", "public, max-age=15724800")
+  // Set ETag
 
 	switch options["mimeType"].(string) {
 	case "image/jpeg":
