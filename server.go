@@ -45,10 +45,13 @@ func (h *proxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var (
 		status   int
 		duration time.Duration
+    err1, err2, err3 error
+    resp     *http.Response
+    m        image.Image
 	)
 	startTime := time.Now()
 
-	resp, err1 := http.Get(h.urlFor(r.URL).String())
+	resp, err1 = http.Get(h.urlFor(r.URL).String())
 	defer resp.Body.Close()
 
 	if err1 != nil || resp.StatusCode != http.StatusOK {
@@ -56,14 +59,14 @@ func (h *proxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(status)
 	}
 
-	if resp.StatusCode == http.StatusOK {
-		m, _, err2 := image.Decode(resp.Body)
-		if err1 != nil && err2 != nil {
+	if err1 == nil && resp.StatusCode == http.StatusOK {
+		m, _, err2 = image.Decode(resp.Body)
+    if err2 != nil {
 			status = http.StatusInternalServerError
 			w.WriteHeader(status)
 		} else {
 			status = http.StatusOK
-			err3 := h.serveImage(w, r, m)
+			err3 = h.serveImage(w, r, m)
 			if err3 != nil {
 				status = http.StatusInternalServerError
 				w.WriteHeader(status)
@@ -72,7 +75,19 @@ func (h *proxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	duration = time.Since(startTime)
-	log.Printf("%v\t%v\n                    Completed %d %v in %dms", r.Method, r.URL.String(), status, http.StatusText(status), int(duration.Nanoseconds()/1000000))
+
+  logStatement := "%v\t%v\n"
+  logStatement += "                    Completed %d %v in %dms\n"
+  if (err1 != nil) {
+    logStatement += "                    error > " + err1.Error()
+  }
+  if (err2 != nil) {
+    logStatement += "                    error > " + err2.Error()
+  }
+  if (err3 != nil) {
+    logStatement += "                    error > " + err3.Error()
+  }
+	log.Printf(logStatement, r.Method, r.URL.String(), status, http.StatusText(status), int(duration.Nanoseconds()/1000000))
 }
 
 func (h *proxyHandler) resizeImage(m image.Image, options map[string]interface{}) image.Image {
