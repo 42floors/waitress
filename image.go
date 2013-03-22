@@ -155,11 +155,11 @@ func resizeAndPad(m image.Image, dstRect image.Rectangle, bgColor color.Color) i
 
 func (h *proxyHandler) watermark(m image.Image) (image.Image, error) {
 	mRect := m.Bounds()
-	if mRect.Dx()*mRect.Dy() <= 10000 {
+	if mRect.Dx()*mRect.Dy() <= 90000 {
 		return m, nil
 	}
 
-	wWidth := int(float32(mRect.Dx()) * 0.29)
+	wWidth := int(float32(mRect.Dx()) * 0.05)
   if wWidth > h.watermarkImage.Bounds().Dx() {
     wWidth = h.watermarkImage.Bounds().Dx()
   }
@@ -169,7 +169,7 @@ func (h *proxyHandler) watermark(m image.Image) (image.Image, error) {
 	r := image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
 	draw.Draw(r, r.Bounds(), m, b.Min, draw.Src)
 
-	margin := int(float32(mRect.Dx()) * 0.04)
+	margin := int(float32(mRect.Dx()) * 0.03)
 	location := image.Rect(r.Bounds().Dx()-margin-scaledWatermark.Bounds().Dx(), r.Bounds().Dy()-margin-scaledWatermark.Bounds().Dy(), r.Bounds().Dx()-margin, r.Bounds().Dy()-margin)
 	draw.DrawMask(r, location, scaledWatermark, image.ZP, nil, image.ZP, draw.Over)
 	return r, nil
