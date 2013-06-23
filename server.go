@@ -2,12 +2,14 @@ package main
 
 import (
 	"flag"
+    "io"
 	"github.com/nfnt/resize"
 	"image"
 	"image/color"
 	_ "image/gif"
 	"image/jpeg"
 	"image/png"
+    "bytes"
 	"io/ioutil"
 	"launchpad.net/goyaml"
 	"log"
@@ -16,6 +18,8 @@ import (
 	"os"
 	"strings"
 	"time"
+    "crypto/md5"
+    "encoding/hex"
 )
 
 type proxyHandler struct {
@@ -41,13 +45,13 @@ func (h proxyHandler) urlFor(u *url.URL) *url.URL {
 }
 
 func (h *proxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-  // TODO: Recover from panic and throw a 500
+	// TODO: Recover from panic and throw a 500
 	var (
-		status   int
-		duration time.Duration
-    err1, err2, err3 error
-    resp     *http.Response
-    m        image.Image
+		status           int
+		duration         time.Duration
+		err1, err2, err3 error
+		resp             *http.Response
+		m                image.Image
 	)
 	startTime := time.Now()
 
@@ -61,7 +65,7 @@ func (h *proxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if err1 == nil && resp.StatusCode == http.StatusOK {
 		m, _, err2 = image.Decode(resp.Body)
-    if err2 != nil {
+		if err2 != nil {
 			status = http.StatusInternalServerError
 			w.WriteHeader(status)
 		} else {
@@ -76,17 +80,17 @@ func (h *proxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	duration = time.Since(startTime)
 
-  logStatement := "%v\t%v\n"
-  logStatement += "                    Completed %d %v in %dms\n"
-  if (err1 != nil) {
-    logStatement += "                    error > " + err1.Error()
-  }
-  if (err2 != nil) {
-    logStatement += "                    error > " + err2.Error()
-  }
-  if (err3 != nil) {
-    logStatement += "                    error > " + err3.Error()
-  }
+	logStatement := "%v\t%v\n"
+	logStatement += "                    Completed %d %v in %dms\n"
+	if err1 != nil {
+		logStatement += "                    error > " + err1.Error()
+	}
+	if err2 != nil {
+		logStatement += "                    error > " + err2.Error()
+	}
+	if err3 != nil {
+		logStatement += "                    error > " + err3.Error()
+	}
 	log.Printf(logStatement, r.Method, r.URL.String(), status, http.StatusText(status), int(duration.Nanoseconds()/1000000))
 }
 
@@ -133,19 +137,31 @@ func (h *proxyHandler) serveImage(w http.ResponseWriter, r *http.Request, m imag
 	w.Header().Set("Content-type", options["mimeType"].(string))
 	w.Header().Set("Expires", time.Now().Add(year).UTC().Format(timeFormat))
 	w.Header().Set("Cache-Control", "public, max-age=15724800")
-  // Set ETag
 
+    etag := md5.New()
+    body := new(bytes.Buffer)
+    bodyWriter := io.MultiWriter(body, etag)
+    
 	switch options["mimeType"].(string) {
 	case "image/jpeg":
-		err = jpeg.Encode(w, m, &jpeg.Options{Quality: 85})
+		err = jpeg.Encode(bodyWriter, m, &jpeg.Options{Quality: 85})
 	case "image/png":
-		err = png.Encode(w, m)
+		err = png.Encode(bodyWriter, m)
 	}
 
+    // log.Printf("%x\n", (string)(etag.Sum(nil)))
+    
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return err
+	} else {
+        w.Header().Set("ETag", hex.EncodeToString(etag.Sum(nil)))
+        log.Println(w.Header().Get("ETag"));
+        body.WriteTo(w)
 	}
+    
+    
+    
 
 	return nil
 }
