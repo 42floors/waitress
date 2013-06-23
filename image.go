@@ -160,9 +160,9 @@ func (h *proxyHandler) watermark(m image.Image) (image.Image, error) {
 	}
 
 	wWidth := int(float32(mRect.Dx()) * 0.05)
-  if wWidth > h.watermarkImage.Bounds().Dx() {
-    wWidth = h.watermarkImage.Bounds().Dx()
-  }
+	if wWidth > h.watermarkImage.Bounds().Dx() {
+		wWidth = h.watermarkImage.Bounds().Dx()
+	}
 	scaledWatermark := resize.Resize(uint(wWidth), 0, h.watermarkImage, resize.MitchellNetravali)
 
 	b := m.Bounds()

@@ -1,15 +1,17 @@
 package main
 
 import (
+	"bytes"
+	"crypto/md5"
+	"encoding/hex"
 	"flag"
-    "io"
 	"github.com/nfnt/resize"
 	"image"
 	"image/color"
 	_ "image/gif"
 	"image/jpeg"
 	"image/png"
-    "bytes"
+	"io"
 	"io/ioutil"
 	"launchpad.net/goyaml"
 	"log"
@@ -18,8 +20,6 @@ import (
 	"os"
 	"strings"
 	"time"
-    "crypto/md5"
-    "encoding/hex"
 )
 
 type proxyHandler struct {
@@ -138,10 +138,10 @@ func (h *proxyHandler) serveImage(w http.ResponseWriter, r *http.Request, m imag
 	w.Header().Set("Expires", time.Now().Add(year).UTC().Format(timeFormat))
 	w.Header().Set("Cache-Control", "public, max-age=15724800")
 
-    etag := md5.New()
-    body := new(bytes.Buffer)
-    bodyWriter := io.MultiWriter(body, etag)
-    
+	etag := md5.New()
+	body := new(bytes.Buffer)
+	bodyWriter := io.MultiWriter(body, etag)
+
 	switch options["mimeType"].(string) {
 	case "image/jpeg":
 		err = jpeg.Encode(bodyWriter, m, &jpeg.Options{Quality: 85})
@@ -149,19 +149,16 @@ func (h *proxyHandler) serveImage(w http.ResponseWriter, r *http.Request, m imag
 		err = png.Encode(bodyWriter, m)
 	}
 
-    // log.Printf("%x\n", (string)(etag.Sum(nil)))
-    
+	// log.Printf("%x\n", (string)(etag.Sum(nil)))
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return err
 	} else {
-        w.Header().Set("ETag", hex.EncodeToString(etag.Sum(nil)))
-        log.Println(w.Header().Get("ETag"));
-        body.WriteTo(w)
+		w.Header().Set("ETag", hex.EncodeToString(etag.Sum(nil)))
+		log.Println(w.Header().Get("ETag"))
+		body.WriteTo(w)
 	}
-    
-    
-    
 
 	return nil
 }
@@ -200,7 +197,7 @@ var serverPort string
 var serverBinding string
 
 func init() {
-	flag.StringVar(&configFile, "config", "", "conf file")
+	flag.StringVar(&configFile, "config", "", "conf file (see config.yml.sample)")
 	flag.StringVar(&serverPort, "port", "3000", "run the server on the specified port")
 	flag.StringVar(&serverBinding, "binding", "0.0.0.0", "bind the server to the specified ip")
 }
