@@ -21,9 +21,9 @@ Usage of waitress:
 
 ## Image processing
 
-The format is specified in the query string as the `s` option. The syntax of `s`
-is similar to the [geometry](http://www.imagemagick.org/script/command-line-processing.php#geometry)
-syntax in ImageMagick.
+The format is specified as the first part of the URL path. The syntax is
+similar to the [geometry](http://www.imagemagick.org/script/command-line-processing.php#geometry)
+syntax of ImageMagick.
 
 ### Syntax
 
@@ -42,6 +42,7 @@ syntax in ImageMagick.
 
 ### Examples
 
+# Support both syntaxes?
 - http://example.com/ec64fc472479c2cddada6ad58e802d492b5936e3.jpg?s=700
 - http://example.com/ec64fc472479c2cddada6ad58e802d492b5936e3.jpg?s=x700
 - http://example.com/ec64fc472479c2cddada6ad58e802d492b5936e3.jpg?s=700x700
@@ -49,5 +50,13 @@ syntax in ImageMagick.
 - http://example.com/ec64fc472479c2cddada6ad58e802d492b5936e3.jpg?s=700x700^
 - http://example.com/ec64fc472479c2cddada6ad58e802d492b5936e3.jpg?s=700x467%23
 - http://example.com/ec64fc472479c2cddada6ad58e802d492b5936e3.jpg?s=700x467!
+
+- http://example.com/s%3D700/ec64fc472479c2cddada6ad58e802d492b5936e3.jpg
+- http://example.com/s%3Dx700/ec64fc472479c2cddada6ad58e802d492b5936e3.jpg
+- http://example.com/s%3D700x700/ec64fc472479c2cddada6ad58e802d492b5936e3.jpg
+- http://example.com/s%3D700^/ec64fc472479c2cddada6ad58e802d492b5936e3.jpg
+- http://example.com/s%3D700x700^/ec64fc472479c2cddada6ad58e802d492b5936e3.jpg
+- http://example.com/s%3D700x467%23/ec64fc472479c2cddada6ad58e802d492b5936e3.jpg
+- http://example.com/s%3D700x467!/ec64fc472479c2cddada6ad58e802d492b5936e3.jpg
 
 ## TODO: Makefile

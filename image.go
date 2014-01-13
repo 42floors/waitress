@@ -70,7 +70,19 @@ func parseSize(s string) map[string]interface{} {
 }
 
 func extractOptions(r *http.Request, m image.Image) map[string]interface{} {
-	sizeOptions := parseSize(r.URL.Query().Get("s"))
+  sizeQuery := r.URL.Query().Get("s")
+
+  if (sizeQuery == "") {
+    queries := strings.Split(strings.Split(r.URL.Path, "/")[1], "&")
+    queryFn := func (value string) bool {log.Println(value[0:2]); return value[0:2] == "s=" }
+    for _, value := range queries {
+      if (queryFn(value)) {
+        sizeQuery = value[2:]
+      }
+    }
+  }
+
+  sizeOptions := parseSize(sizeQuery)
 
 	options := map[string]interface{}{"format": "png"}
 	options["format"] = r.URL.Path[strings.LastIndex(r.URL.Path, ".")+1:]
@@ -154,6 +166,10 @@ func resizeAndPad(m image.Image, dstRect image.Rectangle, bgColor color.Color) i
 }
 
 func (h *proxyHandler) watermark(m image.Image) (image.Image, error) {
+  if (h.watermarkImage == nil) {
+    return m, nil
+  }
+
 	mRect := m.Bounds()
 	if mRect.Dx()*mRect.Dy() <= 90000 {
 		return m, nil

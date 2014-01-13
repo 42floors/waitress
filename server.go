@@ -37,7 +37,15 @@ func (h proxyHandler) urlFor(u *url.URL) *url.URL {
 	n := new(url.URL)
 	n.Scheme = h.Scheme
 	n.Host = h.Host
-	n.Path = h.Prefix + u.Path
+
+  if (len(strings.Split(u.Path, "/")) == 3) {
+    n.Path = h.Prefix + "/" + strings.Join(strings.Split(u.Path, "/")[2:], "/")
+  } else {
+    n.Path = h.Prefix + u.Path
+  }
+
+  log.Println(n.Path)
+
 	n.Path = n.Path[0:strings.LastIndex(n.Path, ".")]
 	n.Path = n.Path + "." + h.Format
 	n.RawQuery = ""
@@ -182,11 +190,14 @@ func parseConfigFile(n string) (*proxyHandler, error) {
 		return nil, err
 	}
 
-	file, err = os.Open(h.Watermark)
-	h.watermarkImage, _, err = image.Decode(file)
-	if err != nil {
-		return nil, err
-	}
+  log.Println(h.Watermark)
+  if (h.Watermark != "") {
+    file, err = os.Open(h.Watermark)
+    h.watermarkImage, _, err = image.Decode(file)
+    if err != nil {
+      return nil, err
+    }
+  }
 
 	h.backgroundColor = color.RGBA{80, 80, 80, 1}
 	return h, nil
