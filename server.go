@@ -48,6 +48,7 @@ func (h proxyHandler) urlFor(u *url.URL) *url.URL {
 
 	n.Path = n.Path[0:strings.LastIndex(n.Path, ".")]
 	n.Path = n.Path + "." + h.Format
+	// n.Path = "/photos/jpg/022982fd1b29cadfc35588422e15d380f13dc8fe.jpg"
 	n.RawQuery = ""
 	return n
 }
@@ -157,14 +158,11 @@ func (h *proxyHandler) serveImage(w http.ResponseWriter, r *http.Request, m imag
 		err = png.Encode(bodyWriter, m)
 	}
 
-	// log.Printf("%x\n", (string)(etag.Sum(nil)))
-
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return err
 	} else {
 		w.Header().Set("ETag", hex.EncodeToString(etag.Sum(nil)))
-		log.Println(w.Header().Get("ETag"))
 		body.WriteTo(w)
 	}
 
