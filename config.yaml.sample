@@ -3,4 +3,6 @@ scheme: http
 secret: 08f6c732950e674ac10c0cb8f2ae8b71caf4fafd43144d994c0663fcaa65564458fd5e6c67de78ac30244476524d2fcc422a4b54df5bfeca265ebcd23ff754ef
 prefix: /photos/jpg
 format: jpg
-watermark: /Users/waratuman/src/waitress/watermark.png
+watermark: ./watermark.png
+port: 3001
+binding: 0.0.0.1

@@ -25,10 +25,12 @@ import (
 type proxyHandler struct {
 	Host      string // host of proxy
 	Scheme    string // scheme of the proxy (typically http)
-	Port      string // The port the server runs on
+	
 	Prefix    string // path prefix for the proxy
 	Format    string // image format on the proxy
 	Watermark string // filename of the watermark
+	Port      string // Server port
+	Binding   string // Server binding
 
 	watermarkImage  image.Image
 	backgroundColor color.Color
@@ -215,12 +217,18 @@ func main() {
 	flag.Parse()
 	h, err := parseConfigFile(configFile)
 
-	if (h.Port != "") {
-		serverPort = h.Port;
+	if (configFile != "" && err != nil) {
+		log.Fatal("Unable to find / parse config file (does the watermark exists?).")
 	}
 
-	if err != nil {
-		log.Fatal("Unable to find / parse config file.")
+	if (h != nil) {
+		if (h.Port != "" && serverPort == "3000") {
+			serverPort = h.Port;
+		}
+
+		if (h.Binding != "" && serverBinding == "0.0.0.0") {
+			serverBinding = h.Binding
+		}
 	}
 
 	http.Handle("/", h)
