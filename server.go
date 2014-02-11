@@ -25,6 +25,7 @@ import (
 type proxyHandler struct {
 	Host      string // host of proxy
 	Scheme    string // scheme of the proxy (typically http)
+	Port      string // The port the server runs on
 	Prefix    string // path prefix for the proxy
 	Format    string // image format on the proxy
 	Watermark string // filename of the watermark
@@ -188,14 +189,13 @@ func parseConfigFile(n string) (*proxyHandler, error) {
 		return nil, err
 	}
 
-  log.Println(h.Watermark)
-  if (h.Watermark != "") {
-    file, err = os.Open(h.Watermark)
-    h.watermarkImage, _, err = image.Decode(file)
-    if err != nil {
-      return nil, err
-    }
-  }
+	if (h.Watermark != "") {
+		file, err = os.Open(h.Watermark)
+		h.watermarkImage, _, err = image.Decode(file)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	h.backgroundColor = color.RGBA{80, 80, 80, 1}
 	return h, nil
@@ -214,9 +214,15 @@ func init() {
 func main() {
 	flag.Parse()
 	h, err := parseConfigFile(configFile)
+
+	if (h.Port != "") {
+		serverPort = h.Port;
+	}
+
 	if err != nil {
 		log.Fatal("Unable to find / parse config file.")
 	}
+
 	http.Handle("/", h)
-	http.ListenAndServe(serverBinding+":"+serverPort, nil)
+	http.ListenAndServe(serverBinding + ":" + serverPort, nil)
 }
