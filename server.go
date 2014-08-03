@@ -47,7 +47,7 @@ func (h proxyHandler) urlFor(u *url.URL) *url.URL {
     n.Path = h.Prefix + u.Path
   }
 
-  log.Println(n.Path)
+  // log.Println(n.Path)
 
 	n.Path = n.Path[0:strings.LastIndex(n.Path, ".")]
 	n.Path = n.Path + "." + h.Format
@@ -109,6 +109,14 @@ func (h *proxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *proxyHandler) resizeImage(m image.Image, options map[string]interface{}) image.Image {
 	dstRect := image.Rect(0, 0, options["width"].(int), options["height"].(int))
 
+    var backgroundColor color.Color
+
+    if _, ok := options["backgroundColor"]; ok {
+        backgroundColor = options["backgroundColor"].(color.Color)
+    } else {
+        backgroundColor = h.backgroundColor
+    }
+
 	if options["crop"].(bool) {
 		m = resizeAndCrop(m, dstRect)
 	} else if options["enforce"].(bool) {
@@ -125,7 +133,8 @@ func (h *proxyHandler) resizeImage(m image.Image, options map[string]interface{}
 
 		m = resize.Resize(uint(dstRect.Dx()), uint(dstRect.Dy()), m, resize.MitchellNetravali)
 	} else {
-		m = resizeAndPad(m, dstRect, h.backgroundColor)
+
+		m = resizeAndPad(m, dstRect, backgroundColor)
 	}
 
 	return m

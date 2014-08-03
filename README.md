@@ -28,6 +28,13 @@ syntax of ImageMagick.
 ### Syntax
 
     s ::= ( width | 'x' height | width 'x' height ) ( '#' | '^' | '!' )?
+    bg ::= (
+        '#' [0-9A-Fa-f]{6} |
+        'rgb(' \d{1,3} ',' \d{1,3} ',' \d{1,3} ')' |
+        'rgba(' \d{1,3} ',' \d{1,3} ',' \d{1,3} ',' \d+ (\.\d+)? ')' |
+        'hsl(' \d{1,3} ',' \d{1,3} '%,' \d{1,3} '%)' |
+        'hsla(' \d{1,3} ',' \d{1,3} '%,' \d{1,3} '%,' \d+ (\.\d+)? ')'        
+    )
 
 ### Size
   `s=700`: Resize the image to have a width of 700 (maintains aspect ratio)
