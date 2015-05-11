@@ -48,12 +48,9 @@ func (h proxyHandler) urlFor(u *url.URL) *url.URL {
     n.Path = h.Prefix + u.Path
   }
 
-  // log.Println(n.Path)
-
 	n.Path = n.Path[0:strings.LastIndex(n.Path, ".")]
 	n.Path = n.Path + h.Postfix + "." + h.Format
-	// n.Path = "/photos/jpg/022982fd1b29cadfc35588422e15d380f13dc8fe.jpg"
-  log.Println(n.Path);
+
 	n.RawQuery = ""
 	return n
 }
