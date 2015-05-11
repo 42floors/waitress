@@ -26,6 +26,7 @@ type proxyHandler struct {
 	Host      string // host of proxy
 	Scheme    string // scheme of the proxy (typically http)
 	Prefix    string // path prefix for the proxy
+  Postfix   string // path postfix for the proxy
 	Format    string // image format on the proxy
 	Watermark string // filename of the watermark
 	Port      string // Server port
@@ -41,16 +42,18 @@ func (h proxyHandler) urlFor(u *url.URL) *url.URL {
 	n.Host = h.Host
 
   if (len(strings.Split(u.Path, "/")) == 3) {
-    n.Path = h.Prefix + "/" + strings.Join(strings.Split(u.Path, "/")[2:], "/")
+    n.Path = h.Prefix + strings.Join(strings.Split(u.Path, "/")[2:], "")
   } else {
+      log.Println(u.Path);
     n.Path = h.Prefix + u.Path
   }
 
   // log.Println(n.Path)
 
 	n.Path = n.Path[0:strings.LastIndex(n.Path, ".")]
-	n.Path = n.Path + "." + h.Format
+	n.Path = n.Path + h.Postfix + "." + h.Format
 	// n.Path = "/photos/jpg/022982fd1b29cadfc35588422e15d380f13dc8fe.jpg"
+  log.Println(n.Path);
 	n.RawQuery = ""
 	return n
 }
@@ -256,5 +259,8 @@ func main() {
 	}
 
 	http.Handle("/", h)
-	http.ListenAndServe(serverBinding + ":" + serverPort, nil)
+	err = http.ListenAndServe(serverBinding + ":" + serverPort, nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
 }
