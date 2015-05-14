@@ -26,7 +26,7 @@ type proxyHandler struct {
 	Host      string // host of proxy
 	Scheme    string // scheme of the proxy (typically http)
 	Prefix    string // path prefix for the proxy
-  Postfix   string // path postfix for the proxy
+	Postfix   string // path postfix for the proxy
 	Format    string // image format on the proxy
 	Watermark string // filename of the watermark
 	Port      string // Server port
@@ -41,12 +41,12 @@ func (h proxyHandler) urlFor(u *url.URL) *url.URL {
 	n.Scheme = h.Scheme
 	n.Host = h.Host
 
-  if (len(strings.Split(u.Path, "/")) == 3) {
-    n.Path = h.Prefix + strings.Join(strings.Split(u.Path, "/")[2:], "")
-  } else {
-      log.Println(u.Path);
-    n.Path = h.Prefix + u.Path
-  }
+	if len(strings.Split(u.Path, "/")) == 3 {
+		n.Path = h.Prefix + strings.Join(strings.Split(u.Path, "/")[2:], "")
+	} else {
+		log.Println(u.Path)
+		n.Path = h.Prefix + u.Path
+	}
 
 	n.Path = n.Path[0:strings.LastIndex(n.Path, ".")]
 	n.Path = n.Path + h.Postfix + "." + h.Format
@@ -108,13 +108,13 @@ func (h *proxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *proxyHandler) resizeImage(m image.Image, options map[string]interface{}) image.Image {
 	dstRect := image.Rect(0, 0, options["width"].(int), options["height"].(int))
 
-    var backgroundColor color.Color
+	var backgroundColor color.Color
 
-    if _, ok := options["backgroundColor"]; ok {
-        backgroundColor = options["backgroundColor"].(color.Color)
-    } else {
-        backgroundColor = h.backgroundColor
-    }
+	if _, ok := options["backgroundColor"]; ok {
+		backgroundColor = options["backgroundColor"].(color.Color)
+	} else {
+		backgroundColor = h.backgroundColor
+	}
 
 	if options["crop"].(bool) {
 		m = resizeAndCrop(m, dstRect)
@@ -129,8 +129,16 @@ func (h *proxyHandler) resizeImage(m image.Image, options map[string]interface{}
 		} else {
 			dstRect.Max.Y = int(float32(dstRect.Max.X) / srcRatio)
 		}
-
 		m = resize.Resize(uint(dstRect.Dx()), uint(dstRect.Dy()), m, resize.MitchellNetravali)
+	} else if options["maximum"].(bool) {
+		srcRect := m.Bounds()
+		srcRatio := float32(srcRect.Dx()) / float32(srcRect.Dy())
+		dstRatio := float32(dstRect.Dx()) / float32(dstRect.Dy())
+		if srcRatio > dstRatio {
+			dstRect.Max.X = int(float32(dstRect.Max.Y) * srcRatio)
+		} else {
+			dstRect.Max.Y = int(float32(dstRect.Max.X) / srcRatio)
+		}
 	} else {
 
 		m = resizeAndPad(m, dstRect, backgroundColor)
@@ -199,7 +207,7 @@ func parseConfigFile(n string) (*proxyHandler, error) {
 		return nil, err
 	}
 
-	if (h.Watermark != "") {
+	if h.Watermark != "" {
 		file, err = os.Open(h.Watermark)
 		h.watermarkImage, _, err = image.Decode(file)
 		if err != nil {
@@ -225,38 +233,38 @@ func main() {
 	flag.Parse()
 
 	var (
-		h *proxyHandler
+		h   *proxyHandler
 		err error
 	)
 
-	if (configFile != "") {
+	if configFile != "" {
 		h, err = parseConfigFile(configFile)
 
-    if err != nil {
-      log.Fatal("Unable to find / parse config file (does the watermark exists?).")
-    }
-  }
+		if err != nil {
+			log.Fatal("Unable to find / parse config file (does the watermark exists?).")
+		}
+	}
 
-	if (h != nil) {
-		if (h.Port != "" && serverPort == "3000") {
-			serverPort = h.Port;
+	if h != nil {
+		if h.Port != "" && serverPort == "3000" {
+			serverPort = h.Port
 		}
 
-		if (h.Binding != "" && serverBinding == "0.0.0.0") {
+		if h.Binding != "" && serverBinding == "0.0.0.0" {
 			serverBinding = h.Binding
 		}
 	}
 
-	if (h.Port != "") {
-		serverPort = h.Port;
+	if h.Port != "" {
+		serverPort = h.Port
 	}
 
-	if (h.Binding != "") {
-	  serverBinding = h.Binding
+	if h.Binding != "" {
+		serverBinding = h.Binding
 	}
 
 	http.Handle("/", h)
-	err = http.ListenAndServe(serverBinding + ":" + serverPort, nil)
+	err = http.ListenAndServe(serverBinding+":"+serverPort, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}

@@ -40,11 +40,12 @@ syntax of ImageMagick.
   `s=700`: Resize the image to have a width of 700 (maintains aspect ratio)
   `s=x700`: Resize the image to have a height of 700 (maintains aspect ratio)
   `s=700x700`: Resize the image to have a width and height of 700. This
-     maintains the aspect ratio and pads image with a background color.
+               maintains the aspect ratio and pads image with a background color.
 
 ### Options
   `#`: Crop the image to fill the specified size (This need to be URL escaped)
   `^`: The size specified is a minimum. The resulting image may be bigger
+  `*`: The size specified is a maximum. The resulting image may be smaller
   `!`: Do not preserve the aspect ratio.
 
 ### Examples
