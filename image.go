@@ -119,7 +119,7 @@ func parseSize(s string) map[string]interface{} {
 		"area":        regexp.MustCompile(`^(\d+)@$`),
 		"height":      regexp.MustCompile(`^x(\d+)([\^!><#])?$`),
 		"scaleXY":     regexp.MustCompile(`^(\d+)%x(\d+)%$`),
-		"widthHeight": regexp.MustCompile(`^(\d+)x(\d+)([\^!><#])?$`)}
+		"widthHeight": regexp.MustCompile(`^(\d+)x(\d+)([\*\^!><#])?$`)}
 
 	options := make(map[string]interface{})
 	options["crop"] = false
