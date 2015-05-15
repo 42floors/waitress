@@ -9,6 +9,7 @@ import (
 	"mime"
 	"net/http"
 	"regexp"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -222,14 +223,22 @@ func extractOptions(r *http.Request, m image.Image) map[string]interface{} {
 
 func crop(m image.Image, r image.Rectangle) image.Image {
 	switch m.(type) {
+	case *image.Gray:
+		m = m.(*image.Gray).SubImage(r)
+	case *image.Gray16:
+		m = m.(*image.Gray16).SubImage(r)
+	case *image.NRGBA:
+		m = m.(*image.NRGBA).SubImage(r)
+	case *image.NRGBA64:
+		m = m.(*image.NRGBA64).SubImage(r)
 	case *image.RGBA:
 		m = m.(*image.RGBA).SubImage(r)
-	case *image.YCbCr:
-		m = m.(*image.YCbCr).SubImage(r)
 	case *image.RGBA64:
 		m = m.(*image.RGBA64).SubImage(r)
+	case *image.YCbCr:
+		m = m.(*image.YCbCr).SubImage(r)
 	default:
-		log.Panic("Unknown color.Model")
+		log.Panic("Unknown color.Model " + reflect.TypeOf(m).String())
 	}
 	return m
 }
