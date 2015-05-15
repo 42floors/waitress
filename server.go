@@ -132,7 +132,6 @@ func (h *proxyHandler) resizeImage(m image.Image, options map[string]interface{}
 		}
 		m = resize.Resize(uint(dstRect.Dx()), uint(dstRect.Dy()), m, resize.MitchellNetravali)
 	} else if options["maximum"].(bool) {
-		log.Println(srcRect, dstRect, srcRatio, dstRatio)
 
 		if srcRatio > dstRatio && srcRect.Dx() > dstRect.Dx() {
 			dstRect.Max.Y = int(float32(dstRect.Max.X) / srcRatio)
@@ -140,28 +139,6 @@ func (h *proxyHandler) resizeImage(m image.Image, options map[string]interface{}
 			dstRect.Max.X = int(float32(dstRect.Max.Y) * srcRatio)
 		}
 
-		// if src is wider then dst and the src x is bigger than the dst x set the dst y to the correct ration and keep dst x the same
-		// else if dst y is bigger than dst y set the dst x to the correct ratio and keep dst x the same
-
-		// if srcRect.Max.Y > dstRect.Max.Y {
-		// 	dstRect.Max.
-		// }
-		//
-		// // if srcRatio > dstRatio {
-		// 	if srcRect.Max.X > dstRect.Max.X {
-		// 		dstRect.Max.X = srcRect.Max.X
-		// 		dstRect.Max.Y = int(float32(dstRect.Max.X) / srcRatio)
-		// 	}
-		// // } else {
-		// 	if srcRect.Max.Y > dstRect.Max.Y {
-		// 		dstRect.Max.Y = srcRect.Max.Y
-		// 		dstRect.Max.X = int(float32(dstRect.Max.Y) * srcRatio)
-		// 	}
-		// // }
-
-		srcRatio := float32(srcRect.Dx()) / float32(srcRect.Dy())
-		dstRatio := float32(dstRect.Dx()) / float32(dstRect.Dy())
-		log.Println(srcRect, dstRect, srcRatio, dstRatio)
 		m = resize.Resize(uint(dstRect.Dx()), uint(dstRect.Dy()), m, resize.MitchellNetravali)
 	} else {
 
