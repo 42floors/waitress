@@ -137,6 +137,9 @@ func (h *proxyHandler) resizeImage(m image.Image, options map[string]interface{}
 			dstRect.Max.Y = int(float32(dstRect.Max.X) / srcRatio)
 		} else if srcRect.Dy() > dstRect.Dy() {
 			dstRect.Max.X = int(float32(dstRect.Max.Y) * srcRatio)
+		} else {
+			dstRect.Max.X = int(float32(srcRect.Max.Y) * srcRatio)
+			dstRect.Max.Y = int(float32(srcRect.Max.X) / srcRatio)
 		}
 
 		m = resize.Resize(uint(dstRect.Dx()), uint(dstRect.Dy()), m, resize.MitchellNetravali)
